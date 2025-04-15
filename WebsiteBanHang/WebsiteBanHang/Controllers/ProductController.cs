@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using WebsiteBanHang.Models;
 using WebsiteBanHang.Repositories;
 
+namespace WebsiteBanHang.Controllers
+{
     public class ProductController : Controller
     {
         private readonly IProductRepository _productRepository;
@@ -14,78 +16,52 @@ using WebsiteBanHang.Repositories;
             _categoryRepository = categoryRepository;
         }
 
-        public IActionResult Add()
+        public async Task<IActionResult> Index()
         {
-            var categories = _categoryRepository.GetAllCategories();
-            ViewBag.Categories = new SelectList(categories, "Id", "Name");
+            var products = await _productRepository.GetAllAsync();
+            return View(products);
+        }
+
+        public async Task<IActionResult> Add()
+        {
+            ViewBag.Categories = await _categoryRepository.GetAllAsync();
             return View();
         }
 
         [HttpPost]
-        public async Task<IActionResult> Add(Product product,IFormFile imageUrl,List<IFormFile> imageUrls)
+        public async Task<IActionResult> Add(Product product)
         {
-        if (ModelState.IsValid)
-        {
-            if (imageUrl != null)
+            if (ModelState.IsValid)
             {
-                product.ImageUrl = await SaveImage(imageUrl);
+                await _productRepository.AddAsync(product);
+                return RedirectToAction("Index");
+            }
+            ViewBag.Categories = await _categoryRepository.GetAllAsync();
+            return View(product);
+        }
+
+        private async Task<string> SaveImage(IFormFile image)
+        {
+            var imagesFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images");
+            if (!Directory.Exists(imagesFolder))
+            {
+                Directory.CreateDirectory(imagesFolder);
             }
 
-            if (imageUrls != null)
+            var fileName = Guid.NewGuid().ToString() + Path.GetExtension(image.FileName);
+            var savePath = Path.Combine(imagesFolder, fileName);
+
+            using (var fileStream = new FileStream(savePath, FileMode.Create))
             {
-                product.ImageUrls = new List<string>();
-                foreach (var file in imageUrls)
-                {
-                    product.ImageUrls.Add(await SaveImage(file));
-                }
+                await image.CopyToAsync(fileStream);
             }
 
-            _productRepository.Add(product);
-            return RedirectToAction("Index");
-        }
-        return View(product);
+            return $"/images/{fileName}";
         }
 
-    private async Task<string> SaveImage(IFormFile image)
-    {
-        // Sử dụng thư mục wwwroot/images
-        var imagesFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images");
-
-        // Tạo thư mục nếu chưa tồn tại
-        if (!Directory.Exists(imagesFolder))
+        public async Task<IActionResult> Display(int id)
         {
-            Directory.CreateDirectory(imagesFolder);
-        }
-
-        // Tạo tên tệp duy nhất
-        var fileName = Guid.NewGuid().ToString() + Path.GetExtension(image.FileName);
-        var savePath = Path.Combine(imagesFolder, fileName);
-
-        // Lưu tệp
-        using (var fileStream = new FileStream(savePath, FileMode.Create))
-        {
-            await image.CopyToAsync(fileStream);
-        }
-
-        // Trả về đường dẫn URL của ảnh
-        return $"/images/{fileName}";
-    }
-
-
-
-    // Các actions khác như Display, Update, Delete
-
-    // Display a list of products
-    public IActionResult Index()
-        {
-            var products = _productRepository.GetAll();
-            return View(products);
-        }
-
-        // Display a single product
-        public IActionResult Display(int id)
-        {
-            var product = _productRepository.GetById(id);
+            var product = await _productRepository.GetByIdAsync(id);
             if (product == null)
             {
                 return NotFound();
@@ -93,10 +69,35 @@ using WebsiteBanHang.Repositories;
             return View(product);
         }
 
-        // Show the product update form
-        public IActionResult Update(int id)
+        public async Task<IActionResult> Update(int id)
         {
-            var product = _productRepository.GetById(id);
+            var product = await _productRepository.GetByIdAsync(id);
+            if (product == null)
+            {
+                return NotFound();
+            }
+            var categories = await _categoryRepository.GetAllAsync();
+            ViewBag.Categories = new SelectList(categories, "Id", "Name",product.CategoryId);
+            return View(product);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Update(int id ,Product product)
+        {
+            if(id != product.Id) {
+                return NotFound();
+            }
+            if (ModelState.IsValid)
+            {
+                await _productRepository.GetByIdAsync(id);
+                return RedirectToAction(nameof(Index));
+            }
+            return View(product);
+        }
+
+        public async Task<IActionResult> Delete(int id)
+        {
+            var product = await _productRepository.GetByIdAsync(id);
             if (product == null)
             {
                 return NotFound();
@@ -104,35 +105,11 @@ using WebsiteBanHang.Repositories;
             return View(product);
         }
 
-    // Process the product update
-    // Process the product update
-    [HttpPost]
-    public IActionResult Update(Product product)
-    {
-        if (ModelState.IsValid)
+        [HttpPost, ActionName("Delete")]
+        public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            _productRepository.Update(product);
+            await _productRepository.DeleteAsync(id);
             return RedirectToAction("Index");
         }
-        return View(product);
-    }
-
-    // Delete confirmation
-    public IActionResult Delete(int id)
-    {
-        var product = _productRepository.GetById(id);
-        if (product == null)
-        {
-            return NotFound();
-        }
-        return View(product);
-    }
-
-    // Process the product deletion
-    [HttpPost, ActionName("Delete")]
-    public IActionResult DeleteConfirmed(int id)
-    {
-        _productRepository.Delete(id);
-        return RedirectToAction("Index");
     }
 }
