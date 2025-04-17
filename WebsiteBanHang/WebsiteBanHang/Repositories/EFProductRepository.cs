@@ -29,6 +29,12 @@ namespace WebsiteBanHang.Repositories
             await _context.SaveChangesAsync();
         }
 
+        public async Task UpdateAsync(Product product)
+        {
+            _context.Products.Update(product);
+            await _context.SaveChangesAsync();
+        }
+
         public async Task DeleteAsync(int id)
         {
             var product = await _context.Products.FindAsync(id);
