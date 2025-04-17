@@ -1,0 +1,90 @@
+﻿@model WebsiteBanHang.Models.ShoppingCart
+@{
+	ViewData["Title"] = "Giỏ hàng";
+	Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container mt-4">
+	<h2>Giỏ hàng của bạn</h2>
+	
+	@if (Model.Items.Count == 0)
+	{
+		<div class="alert alert-info">
+			Giỏ hàng của bạn đang trống. <a asp-controller="Product" asp-action="Index">Tiếp tục mua sắm</a>
+		</div>
+	}
+	else
+	{
+		<div class="table-responsive">
+			<table class="table table-bordered">
+				<thead class="thead-light">
+					<tr>
+						<th>Sản phẩm</th>
+						<th>Giá</th>
+						<th>Số lượng</th>
+						<th>Tổng</th>
+						<th>Thao tác</th>
+					</tr>
+				</thead>
+				<tbody>
+					@foreach (var item in Model.Items)
+					{
+						<tr>
+							<td>@item.Name</td>
+							<td>@item.Price.ToString("N0") đ</td>
+							<td>
+								<div class="input-group" style="width: 120px;">
+									<button class="btn btn-outline-secondary" type="button" onclick="updateQuantity(@item.ProductId, @(item.Quantity - 1))">-</button>
+									<input type="text" class="form-control text-center" value="@item.Quantity" readonly>
+									<button class="btn btn-outline-secondary" type="button" onclick="updateQuantity(@item.ProductId, @(item.Quantity + 1))">+</button>
+								</div>
+							</td>
+							<td>@((item.Price * item.Quantity).ToString("N0")) đ</td>
+							<td>
+								<a href="#" onclick="removeFromCart(@item.ProductId)" class="text-danger">
+									<i class="fas fa-trash"></i>
+								</a>
+							</td>
+						</tr>
+					}
+				</tbody>
+				<tfoot>
+					<tr>
+						<td colspan="3" class="text-end"><strong>Tổng cộng:</strong></td>
+						<td><strong>@Model.Items.Sum(item => item.Price * item.Quantity).ToString("N0") đ</strong></td>
+						<td></td>
+					</tr>
+				</tfoot>
+			</table>
+		</div>
+
+		<div class="text-end">
+			<a asp-controller="Product" asp-action="Index" class="btn btn-secondary">Tiếp tục mua sắm</a>
+			@if (User.Identity.IsAuthenticated)
+			{
+				<a asp-action="Checkout" class="btn btn-primary">Thanh toán</a>
+			}
+			else
+			{
+				<a asp-area="Identity" asp-page="/Account/Login" asp-route-returnUrl="/ShoppingCart/Checkout" class="btn btn-primary">
+					Đăng nhập để thanh toán
+				</a>
+			}
+		</div>
+	}
+</div>
+
+@section Scripts {
+	<script>
+		function updateQuantity(productId, quantity) {
+			if (quantity < 1) return;
+			window.location.href = '@Url.Action("UpdateQuantity")' + '?productId=' + productId + '&quantity=' + quantity;
+		}
+
+		function removeFromCart(productId) {
+			if (confirm('Bạn có chắc chắn muốn xóa sản phẩm này khỏi giỏ hàng?')) {
+				window.location.href = '@Url.Action("RemoveFromCart")' + '?productId=' + productId;
+			}
+		}
+	</script>
+}

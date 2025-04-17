@@ -1,0 +1,72 @@
+@model WebsiteBanHang.Models.Order
+@{
+    ViewData["Title"] = "Đặt hàng thành công";
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h3 class="text-center mb-0">Đặt hàng thành công!</h3>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <i class="fas fa-check-circle text-success" style="font-size: 4rem;"></i>
+                    </div>
+                    <h4 class="text-center mb-4">Cảm ơn bạn đã đặt hàng</h4>
+                    
+                    <div class="order-details">
+                        <h5>Thông tin đơn hàng</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Mã đơn hàng:</strong> @Model.Id</p>
+                                <p><strong>Ngày đặt:</strong> @Model.OrderDate.ToString("dd/MM/yyyy HH:mm")</p>
+                                <p><strong>Tổng tiền:</strong> @Model.TotalPrice.ToString("N0") đ</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Họ tên:</strong> @Model.FullName</p>
+                                <p><strong>Điện thoại:</strong> @Model.Phone</p>
+                                <p><strong>Địa chỉ:</strong> @Model.Address</p>
+                            </div>
+                        </div>
+                        
+                        @if (!string.IsNullOrEmpty(Model.Note))
+                        {
+                            <p><strong>Ghi chú:</strong> @Model.Note</p>
+                        }
+                    </div>
+
+                    <div class="mt-4">
+                        <h5>Chi tiết đơn hàng</h5>
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Sản phẩm</th>
+                                    <th>Số lượng</th>
+                                    <th>Giá</th>
+                                    <th>Thành tiền</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model.OrderDetails)
+                                {
+                                    <tr>
+                                        <td>@item.ProductName</td>
+                                        <td>@item.Quantity</td>
+                                        <td>@item.Price.ToString("N0") đ</td>
+                                        <td>@((item.Price * item.Quantity).ToString("N0")) đ</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="text-center mt-4">
+                        <a asp-controller="Home" asp-action="Index" class="btn btn-primary">Tiếp tục mua sắm</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div> 
